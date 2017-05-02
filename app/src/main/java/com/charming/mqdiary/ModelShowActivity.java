@@ -5,11 +5,15 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -20,14 +24,12 @@ import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import java.io.File;
 import java.io.IOException;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-
-//import com.tencent.smtt.sdk.WebSettings;
-//import com.tencent.smtt.sdk.WebView;
 
 public class ModelShowActivity extends Activity implements View.OnClickListener {
     WebView mWebView;
@@ -41,42 +43,36 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     ImageView mPlayIcon;
     ImageView mNextIcon;
     ImageView mLastIcon;
+    ImageView mFrontImage;
+    ImageView mLeftImage;
+    ImageView mRightImage;
     Context mContext;
+    int mIndex = 0;
 
     private ValueCallback<Uri> uploadMessage;
     private ValueCallback<Uri[]> uploadMessageAboveL;
     private final static int FILE_CHOOSER_RESULT_CODE = 10000;
+    private static final int FRONT_PHOTO_REQUEST_CODE = 10001;
+    private static final int LEFT_PHOTO_REQUEST_CODE = 10002;
+    private static final int RIGHT_PHOTO_REQUEST_CODE = 10003;
 
+    private int imageHeight;
+    private int imageWidth;
+
+    private static final String CAMERA_DIR = "/dcim/";
+    private static final String albumName = "MQPhoto";
+
+    File imageFile;
+    Bitmap mPhotoBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_model_show);
         mContext = this;
-        mWebView = (WebView) findViewById(R.id.forum_context);
-        mFirstIcon = (ImageView) findViewById(R.id.first_icon);
-        mPreviousIcon = (ImageView) findViewById(R.id.previous_icon);
-        mPlayIcon = (ImageView) findViewById(R.id.play_icon);
-        mNextIcon = (ImageView) findViewById(R.id.next_icon);
-        mLastIcon = (ImageView) findViewById(R.id.final_icon);
-
-        mFirstIcon.setOnClickListener(this);
-        mPreviousIcon.setOnClickListener(this);
-        mPlayIcon.setOnClickListener(this);
-        mNextIcon.setOnClickListener(this);
-        mLastIcon.setOnClickListener(this);
+        initView();
+        initWebview();
         mMainThreadHandler = new Handler(Looper.getMainLooper());
-        init();
-//        mWebView.loadUrl(url);
-//        WebSettings webSettings = mWebView.getSettings();
-//        webSettings.setJavaScriptEnabled(true);
-//        mWebView.setWebViewClient(new WebViewClient() {
-//            @Override
-//            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-//                view.loadUrl(url);
-//                return true;
-//            }
-//        });
         final Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -107,7 +103,33 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
 
     }
 
-    private void init() {
+    private void initView() {
+        mWebView = (WebView) findViewById(R.id.forum_context);
+
+        mFirstIcon = (ImageView) findViewById(R.id.first_icon);
+        mPreviousIcon = (ImageView) findViewById(R.id.previous_icon);
+        mPlayIcon = (ImageView) findViewById(R.id.play_icon);
+        mNextIcon = (ImageView) findViewById(R.id.next_icon);
+        mLastIcon = (ImageView) findViewById(R.id.final_icon);
+
+        mFrontImage = (ImageView) findViewById(R.id.front_image);
+        mLeftImage = (ImageView) findViewById(R.id.left_image);
+        mRightImage = (ImageView) findViewById(R.id.right_image);
+
+        imageHeight = mFrontImage.getHeight();
+        imageWidth = mFrontImage.getWidth();
+
+        mFirstIcon.setOnClickListener(this);
+        mPreviousIcon.setOnClickListener(this);
+        mPlayIcon.setOnClickListener(this);
+        mNextIcon.setOnClickListener(this);
+        mLastIcon.setOnClickListener(this);
+        mFrontImage.setOnClickListener(this);
+        mLeftImage.setOnClickListener(this);
+        mRightImage.setOnClickListener(this);
+    }
+
+    private void initWebview() {
         WebView.setWebContentsDebuggingEnabled(true);
         WebSettings webSetting = mWebView.getSettings();
         webSetting.setAllowFileAccess(true);
@@ -182,15 +204,36 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == FILE_CHOOSER_RESULT_CODE) {
-            if (null == uploadMessage && null == uploadMessageAboveL) return;
-            Uri result = data == null || resultCode != RESULT_OK ? null : data.getData();
-            if (uploadMessageAboveL != null) {
-                onActivityResultAboveL(requestCode, resultCode, data);
-            } else if (uploadMessage != null) {
-                uploadMessage.onReceiveValue(result);
-                uploadMessage = null;
-            }
+        Log.d(TAG, "onActivityResult, requestCode : " + requestCode + "resultCode : " + resultCode);
+        switch (requestCode) {
+            case FILE_CHOOSER_RESULT_CODE:
+                if (null == uploadMessage && null == uploadMessageAboveL) return;
+                Uri result = data == null || resultCode != RESULT_OK ? null : data.getData();
+                if (uploadMessageAboveL != null) {
+                    onActivityResultAboveL(requestCode, resultCode, data);
+                } else if (uploadMessage != null) {
+                    uploadMessage.onReceiveValue(result);
+                    uploadMessage = null;
+                }
+                break;
+            case FRONT_PHOTO_REQUEST_CODE:
+                if (resultCode == RESULT_OK) {
+                    decodeBitmap();
+                    mFrontImage.setImageBitmap(mPhotoBitmap);
+                }
+                break;
+            case LEFT_PHOTO_REQUEST_CODE:
+                if (resultCode == RESULT_OK) {
+                    decodeBitmap();
+                    mLeftImage.setImageBitmap(mPhotoBitmap);
+                }
+                break;
+            case RIGHT_PHOTO_REQUEST_CODE:
+                if (resultCode == RESULT_OK) {
+                    decodeBitmap();
+                    mRightImage.setImageBitmap(mPhotoBitmap);
+                }
+                break;
         }
     }
 
@@ -220,7 +263,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
 
     @Override
     public void onClick(View view) {
-
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         switch (view.getId()) {
             case R.id.first_icon:
                 Log.d(TAG, "first icon is clicked");
@@ -244,12 +287,30 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                 Log.d(TAG, "final icon is clicked");
                 mWebView.loadUrl("javascript:remoteControlFinal()");
                 break;
+            case R.id.front_image:
+                Log.d(TAG, "front image is clicked");
+                imageFile = new File(getPhotoDir() + "/round_" + mIndex + "_front.jpg");
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
+                startActivityForResult(takePictureIntent, FRONT_PHOTO_REQUEST_CODE);
+                break;
+            case R.id.left_image:
+                Log.d(TAG, "left image is clicked");
+                imageFile = new File(getPhotoDir() + "/round_" + mIndex + "_left.jpg");
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
+                startActivityForResult(takePictureIntent, LEFT_PHOTO_REQUEST_CODE);
+                break;
+            case R.id.right_image:
+                Log.d(TAG, "right image is clicked");
+                imageFile = new File(getPhotoDir() + "/round_" + mIndex + "_right.jpg");
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
+                startActivityForResult(takePictureIntent, RIGHT_PHOTO_REQUEST_CODE);
+                break;
         }
     }
 
     @JavascriptInterface
     public void pausePlaying() {
-        Log.d(TAG,"pausePlaying is called");
+        Log.d(TAG, "pausePlaying is called");
         mMainThreadHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -260,7 +321,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
 
     @JavascriptInterface
     public void startPlaying() {
-        Log.d(TAG,"startPlaying is called");
+        Log.d(TAG, "startPlaying is called");
         mMainThreadHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -268,6 +329,57 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
             }
         });
     }
+
+    @JavascriptInterface
+    public void updateIndex(int index) {
+        Log.d(TAG, "updateIndex is called, index is " + index);
+        mIndex = index;
+    }
+
+    private void decodeBitmap() {
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+
+        int photoW = bmOptions.outWidth;
+        int photoH = bmOptions.outHeight;
+
+        int scaleFactor = 1;
+        if ((imageWidth > 0) && (imageHeight > 0)) {
+            scaleFactor = Math.min(photoW / imageWidth, photoH / imageHeight);
+        }
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = scaleFactor;
+        bmOptions.inPurgeable = true;
+        mPhotoBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+    }
+
+    private String getPhotoDir() {
+        File privateDir = null;
+        File publicDir = null;
+
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            privateDir = new File(Environment.getExternalStorageDirectory() + CAMERA_DIR + albumName);
+            Log.d(TAG, "private dir : " + privateDir.getAbsolutePath());
+            publicDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), albumName);
+            Log.d(TAG, "public dir : " + publicDir.getAbsolutePath());
+            if (publicDir != null) {
+                if (!publicDir.mkdirs()) {
+                    if (!publicDir.exists()) {
+                        Log.d("CameraSample", "failed to create directory");
+                        return null;
+                    }
+                }
+            }
+        } else {
+            Log.v(getString(R.string.app_name), "External storage is not mounted READ/WRITE.");
+            return null;
+        }
+
+        return publicDir.getAbsolutePath();
+    }
+
+
 }
 
 
