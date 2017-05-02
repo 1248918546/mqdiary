@@ -308,6 +308,14 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         }
     }
 
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        imageHeight = mFrontImage.getHeight();
+        imageWidth = mFrontImage.getWidth();
+    }
+
     @JavascriptInterface
     public void pausePlaying() {
         Log.d(TAG, "pausePlaying is called");
@@ -344,10 +352,13 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         int photoW = bmOptions.outWidth;
         int photoH = bmOptions.outHeight;
 
-        int scaleFactor = 1;
+        int scaleFactor = 4;
         if ((imageWidth > 0) && (imageHeight > 0)) {
             scaleFactor = Math.min(photoW / imageWidth, photoH / imageHeight);
         }
+        Log.d(TAG, "imageWidth : " + imageWidth + " imageHeight : " + imageHeight);
+        Log.d(TAG, "photoW : " + photoW + " photoH : " + photoW);
+        Log.d(TAG, "scaleFactor : " + scaleFactor);
         bmOptions.inJustDecodeBounds = false;
         bmOptions.inSampleSize = scaleFactor;
         bmOptions.inPurgeable = true;
