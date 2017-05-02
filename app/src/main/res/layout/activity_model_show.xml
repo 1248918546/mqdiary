@@ -25,37 +25,37 @@
 
         <ImageView
             android:id="@+id/first_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginLeft="5dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="10dp"
             android:src="@drawable/firsticon"/>
 
         <ImageView
             android:id="@+id/previous_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginLeft="5dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="10dp"
             android:src="@drawable/previousicon"/>
 
         <ImageView
             android:id="@+id/play_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginLeft="5dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="10dp"
             android:src="@drawable/playicon"/>
 
         <ImageView
             android:id="@+id/next_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginLeft="5dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="10dp"
             android:src="@drawable/nexticon"/>
 
         <ImageView
             android:id="@+id/final_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginLeft="5dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="10dp"
             android:src="@drawable/finalicon"/>
 
     </LinearLayout>

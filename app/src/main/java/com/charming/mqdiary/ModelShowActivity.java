@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -91,7 +92,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                             public void run() {
 //                                mWebView.loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "utf-8", null);
                                 mWebView.loadDataWithBaseURL("file:///", htmlContent, "text/html", "utf-8", null);
-//                                mWebView.loadUrl(url);
+//                                mWebView.loadUrl(mContext.getString(R.string.oss_url));
                             }
                         });
                     } else {
@@ -107,6 +108,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     }
 
     private void init() {
+        WebView.setWebContentsDebuggingEnabled(true);
         WebSettings webSetting = mWebView.getSettings();
         webSetting.setAllowFileAccess(true);
         webSetting.setAllowFileAccessFromFileURLs(true);
@@ -137,6 +139,9 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         webSetting.setPluginState(WebSettings.PluginState.ON_DEMAND);
         // webSetting.setRenderPriority(WebSettings.RenderPriority.HIGH);
         // webSetting.setPreFectch(true);
+
+        mWebView.addJavascriptInterface(this, "AndroidClient");
+
         mWebView.setWebChromeClient(new WebChromeClient() {
 
             // For Android < 3.0
@@ -219,6 +224,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         switch (view.getId()) {
             case R.id.first_icon:
                 Log.d(TAG, "first icon is clicked");
+                mWebView.loadUrl("javascript:sayHello()");
                 mWebView.loadUrl("javascript:remoteControlFirst()");
                 break;
             case R.id.previous_icon:
@@ -230,7 +236,8 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                 mWebView.loadUrl("javascript:remoteControlPlay()");
                 break;
             case R.id.next_icon:
-                Log.d(TAG, "mext icon is clicked");
+                Log.d(TAG, "next icon is clicked");
+                mWebView.loadUrl("javascript:sayHello()");
                 mWebView.loadUrl("javascript:remoteControlNext()");
                 break;
             case R.id.final_icon:
@@ -238,6 +245,28 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                 mWebView.loadUrl("javascript:remoteControlFinal()");
                 break;
         }
+    }
+
+    @JavascriptInterface
+    public void pausePlaying() {
+        Log.d(TAG,"pausePlaying is called");
+        mMainThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mPlayIcon.setImageDrawable(getResources().getDrawable(R.drawable.playicon));
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void startPlaying() {
+        Log.d(TAG,"startPlaying is called");
+        mMainThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mPlayIcon.setImageDrawable(getResources().getDrawable(R.drawable.stopicon));
+            }
+        });
     }
 }
 
