@@ -56,23 +56,26 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     private static final int LEFT_PHOTO_REQUEST_CODE = 10002;
     private static final int RIGHT_PHOTO_REQUEST_CODE = 10003;
 
+    private static final String FRONT_PHOTO_TYPE = "front";
+    private static final String LEFT_PHOTO_TYPE = "left";
+    private static final String RIGHT_PHOTO_TYPE = "right";
+
     private int imageHeight;
     private int imageWidth;
 
     private static final String CAMERA_DIR = "/dcim/";
     private static final String albumName = "MQPhoto";
 
-    File imageFile;
     Bitmap mPhotoBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_model_show);
+        mMainThreadHandler = new Handler(Looper.getMainLooper());
         mContext = this;
         initView();
         initWebview();
-        mMainThreadHandler = new Handler(Looper.getMainLooper());
         final Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -127,6 +130,8 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         mFrontImage.setOnClickListener(this);
         mLeftImage.setOnClickListener(this);
         mRightImage.setOnClickListener(this);
+
+        updateAllPhoto();
     }
 
     private void initWebview() {
@@ -218,20 +223,17 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                 break;
             case FRONT_PHOTO_REQUEST_CODE:
                 if (resultCode == RESULT_OK) {
-                    decodeBitmap();
-                    mFrontImage.setImageBitmap(mPhotoBitmap);
+                    updatePhoto(mIndex, FRONT_PHOTO_TYPE);
                 }
                 break;
             case LEFT_PHOTO_REQUEST_CODE:
                 if (resultCode == RESULT_OK) {
-                    decodeBitmap();
-                    mLeftImage.setImageBitmap(mPhotoBitmap);
+                    updatePhoto(mIndex, LEFT_PHOTO_TYPE);
                 }
                 break;
             case RIGHT_PHOTO_REQUEST_CODE:
                 if (resultCode == RESULT_OK) {
-                    decodeBitmap();
-                    mRightImage.setImageBitmap(mPhotoBitmap);
+                    updatePhoto(mIndex, RIGHT_PHOTO_TYPE);
                 }
                 break;
         }
@@ -264,6 +266,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     @Override
     public void onClick(View view) {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        File imageFile;
         switch (view.getId()) {
             case R.id.first_icon:
                 Log.d(TAG, "first icon is clicked");
@@ -289,19 +292,19 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                 break;
             case R.id.front_image:
                 Log.d(TAG, "front image is clicked");
-                imageFile = new File(getPhotoDir() + "/round_" + mIndex + "_front.jpg");
+                imageFile = new File(getPhotoFilename(mIndex, FRONT_PHOTO_TYPE));
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
                 startActivityForResult(takePictureIntent, FRONT_PHOTO_REQUEST_CODE);
                 break;
             case R.id.left_image:
                 Log.d(TAG, "left image is clicked");
-                imageFile = new File(getPhotoDir() + "/round_" + mIndex + "_left.jpg");
+                imageFile = new File(getPhotoFilename(mIndex, LEFT_PHOTO_TYPE));
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
                 startActivityForResult(takePictureIntent, LEFT_PHOTO_REQUEST_CODE);
                 break;
             case R.id.right_image:
                 Log.d(TAG, "right image is clicked");
-                imageFile = new File(getPhotoDir() + "/round_" + mIndex + "_right.jpg");
+                imageFile = new File(getPhotoFilename(mIndex, RIGHT_PHOTO_TYPE));
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
                 startActivityForResult(takePictureIntent, RIGHT_PHOTO_REQUEST_CODE);
                 break;
@@ -342,9 +345,10 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     public void updateIndex(int index) {
         Log.d(TAG, "updateIndex is called, index is " + index);
         mIndex = index;
+        updateAllPhoto();
     }
 
-    private void decodeBitmap() {
+    private Bitmap decodeBitmapFromFile(File imageFile) {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
@@ -362,7 +366,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         bmOptions.inJustDecodeBounds = false;
         bmOptions.inSampleSize = scaleFactor;
         bmOptions.inPurgeable = true;
-        mPhotoBitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+        return BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
     }
 
     private String getPhotoDir() {
@@ -390,7 +394,51 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         return publicDir.getAbsolutePath();
     }
 
+    private String getPhotoFilename(int round, String type) {
+        return getPhotoDir() + "/round_" + round + "_" + type + ".jpg";
+    }
 
+    private void updatePhoto(final int round, final String type) {
+        mMainThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                File file;
+                switch (type) {
+                    case FRONT_PHOTO_TYPE:
+                        file = new File(getPhotoFilename(round, type));
+                        if (file.exists()) {
+                            mFrontImage.setImageBitmap(decodeBitmapFromFile(file));
+                        } else {
+                            mFrontImage.setImageDrawable(getResources().getDrawable(R.drawable.front_defalut));
+                        }
+                        break;
+                    case LEFT_PHOTO_TYPE:
+                        file = new File(getPhotoFilename(round, type));
+                        if (file.exists()) {
+                            mLeftImage.setImageBitmap(decodeBitmapFromFile(file));
+                        } else {
+                            mLeftImage.setImageDrawable(getResources().getDrawable(R.drawable.left_default));
+                        }
+                        break;
+                    case RIGHT_PHOTO_TYPE:
+                        file = new File(getPhotoFilename(round, type));
+                        if (file.exists()) {
+                            mRightImage.setImageBitmap(decodeBitmapFromFile(file));
+                        } else {
+                            mRightImage.setImageDrawable(getResources().getDrawable(R.drawable.right_default));
+                        }
+                        break;
+                }
+            }
+        });
+
+    }
+
+    private void updateAllPhoto() {
+        updatePhoto(mIndex, FRONT_PHOTO_TYPE);
+        updatePhoto(mIndex, LEFT_PHOTO_TYPE);
+        updatePhoto(mIndex, RIGHT_PHOTO_TYPE);
+    }
 }
 
 
