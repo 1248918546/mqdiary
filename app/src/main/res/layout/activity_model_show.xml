@@ -72,18 +72,17 @@
         android:layout_marginTop="10dp">
 
         <ImageView
+            android:id="@+id/left_image"
+            android:layout_width="100dp"
+            android:layout_height="180dp"
+            android:src="@drawable/left_default"/>
+
+        <ImageView
             android:id="@+id/front_image"
             android:layout_width="100dp"
             android:layout_height="180dp"
             android:layout_marginLeft="10dp"
-            android:src="@drawable/front_defalut"/>
-
-        <ImageView
-            android:id="@+id/left_image"
-            android:layout_width="100dp"
-            android:layout_height="180dp"
-            android:layout_marginLeft="10dp"
-            android:src="@drawable/left_default"/>
+            android:src="@drawable/front_default"/>
 
         <ImageView
             android:id="@+id/right_image"
@@ -91,14 +90,6 @@
             android:layout_height="180dp"
             android:layout_marginLeft="10dp"
             android:src="@drawable/right_default"/>
-
-        <ImageView
-            android:id="@+id/large_image"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true">
-        </ImageView>
     </LinearLayout>
 
 </RelativeLayout>

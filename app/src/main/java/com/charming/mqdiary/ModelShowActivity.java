@@ -457,7 +457,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                         if (file.exists()) {
                             mFrontImage.setImageBitmap(decodeBitmap(file.getAbsolutePath(), 0));
                         } else {
-                            mFrontImage.setImageDrawable(getResources().getDrawable(R.drawable.front_defalut));
+                            mFrontImage.setImageDrawable(getResources().getDrawable(R.drawable.front_default));
                         }
                         break;
                     case LEFT_PHOTO_TYPE:
