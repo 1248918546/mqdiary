@@ -2,6 +2,7 @@ package com.charming.mqdiary;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -267,6 +269,10 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
     public void onClick(View view) {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File imageFile;
+        LayoutInflater inflater = LayoutInflater.from(mContext);
+        View imgEntryView = inflater.inflate(R.layout.dialog_photo_entry, null);
+        final AlertDialog dialog = new AlertDialog.Builder(mContext).create();
+        ImageView img = (ImageView) imgEntryView.findViewById(R.id.large_image);
         switch (view.getId()) {
             case R.id.first_icon:
                 Log.d(TAG, "first icon is clicked");
@@ -293,20 +299,59 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
             case R.id.front_image:
                 Log.d(TAG, "front image is clicked");
                 imageFile = new File(getPhotoFilename(mIndex, FRONT_PHOTO_TYPE));
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
-                startActivityForResult(takePictureIntent, FRONT_PHOTO_REQUEST_CODE);
+                if (imageFile.exists()) {
+                    updatePhoto(mIndex, FRONT_PHOTO_TYPE);
+                    img.setImageBitmap(decodeBitmap(getPhotoFilename(mIndex, FRONT_PHOTO_TYPE), 4));
+                    dialog.setView(imgEntryView);
+                    dialog.show();
+                    imgEntryView.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View paramView) {
+                            dialog.cancel();
+                        }
+                    });
+                } else {
+                    imageFile = new File(getPhotoFilename(mIndex, FRONT_PHOTO_TYPE));
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
+                    startActivityForResult(takePictureIntent, FRONT_PHOTO_REQUEST_CODE);
+                }
                 break;
             case R.id.left_image:
                 Log.d(TAG, "left image is clicked");
                 imageFile = new File(getPhotoFilename(mIndex, LEFT_PHOTO_TYPE));
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
-                startActivityForResult(takePictureIntent, LEFT_PHOTO_REQUEST_CODE);
+                if (imageFile.exists()) {
+                    updatePhoto(mIndex, LEFT_PHOTO_TYPE);
+                    img.setImageBitmap(decodeBitmap(getPhotoFilename(mIndex, LEFT_PHOTO_TYPE), 4));
+                    dialog.setView(imgEntryView);
+                    dialog.show();
+                    imgEntryView.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View paramView) {
+                            dialog.cancel();
+                        }
+                    });
+                } else {
+                    imageFile = new File(getPhotoFilename(mIndex, LEFT_PHOTO_TYPE));
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
+                    startActivityForResult(takePictureIntent, LEFT_PHOTO_REQUEST_CODE);
+                }
                 break;
             case R.id.right_image:
                 Log.d(TAG, "right image is clicked");
                 imageFile = new File(getPhotoFilename(mIndex, RIGHT_PHOTO_TYPE));
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
-                startActivityForResult(takePictureIntent, RIGHT_PHOTO_REQUEST_CODE);
+                if (imageFile.exists()) {
+                    updatePhoto(mIndex, RIGHT_PHOTO_TYPE);
+                    img.setImageBitmap(decodeBitmap(getPhotoFilename(mIndex, RIGHT_PHOTO_TYPE), 4));
+                    dialog.setView(imgEntryView);
+                    dialog.show();
+                    imgEntryView.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View paramView) {
+                            dialog.cancel();
+                        }
+                    });
+                } else {
+                    imageFile = new File(getPhotoFilename(mIndex, RIGHT_PHOTO_TYPE));
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(imageFile));
+                    startActivityForResult(takePictureIntent, RIGHT_PHOTO_REQUEST_CODE);
+                }
                 break;
         }
     }
@@ -348,25 +393,28 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
         updateAllPhoto();
     }
 
-    private Bitmap decodeBitmapFromFile(File imageFile) {
+    private Bitmap decodeBitmap(String filePath, int scaleFactor) {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+        BitmapFactory.decodeFile(filePath, bmOptions);
 
         int photoW = bmOptions.outWidth;
         int photoH = bmOptions.outHeight;
 
-        int scaleFactor = 4;
-        if ((imageWidth > 0) && (imageHeight > 0)) {
-            scaleFactor = Math.min(photoW / imageWidth, photoH / imageHeight);
+        if (scaleFactor == 0) {
+            scaleFactor = 4;
+            if ((imageWidth > 0) && (imageHeight > 0)) {
+                scaleFactor = Math.min(photoW / imageWidth, photoH / imageHeight);
+            }
+            Log.d(TAG, "imageWidth : " + imageWidth + " imageHeight : " + imageHeight);
+            Log.d(TAG, "photoW : " + photoW + " photoH : " + photoW);
+            Log.d(TAG, "scaleFactor : " + scaleFactor);
         }
-        Log.d(TAG, "imageWidth : " + imageWidth + " imageHeight : " + imageHeight);
-        Log.d(TAG, "photoW : " + photoW + " photoH : " + photoW);
-        Log.d(TAG, "scaleFactor : " + scaleFactor);
+
         bmOptions.inJustDecodeBounds = false;
         bmOptions.inSampleSize = scaleFactor;
         bmOptions.inPurgeable = true;
-        return BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+        return BitmapFactory.decodeFile(filePath, bmOptions);
     }
 
     private String getPhotoDir() {
@@ -407,7 +455,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                     case FRONT_PHOTO_TYPE:
                         file = new File(getPhotoFilename(round, type));
                         if (file.exists()) {
-                            mFrontImage.setImageBitmap(decodeBitmapFromFile(file));
+                            mFrontImage.setImageBitmap(decodeBitmap(file.getAbsolutePath(), 0));
                         } else {
                             mFrontImage.setImageDrawable(getResources().getDrawable(R.drawable.front_defalut));
                         }
@@ -415,7 +463,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                     case LEFT_PHOTO_TYPE:
                         file = new File(getPhotoFilename(round, type));
                         if (file.exists()) {
-                            mLeftImage.setImageBitmap(decodeBitmapFromFile(file));
+                            mLeftImage.setImageBitmap(decodeBitmap(file.getAbsolutePath(), 0));
                         } else {
                             mLeftImage.setImageDrawable(getResources().getDrawable(R.drawable.left_default));
                         }
@@ -423,7 +471,7 @@ public class ModelShowActivity extends Activity implements View.OnClickListener 
                     case RIGHT_PHOTO_TYPE:
                         file = new File(getPhotoFilename(round, type));
                         if (file.exists()) {
-                            mRightImage.setImageBitmap(decodeBitmapFromFile(file));
+                            mRightImage.setImageBitmap(decodeBitmap(file.getAbsolutePath(), 0));
                         } else {
                             mRightImage.setImageDrawable(getResources().getDrawable(R.drawable.right_default));
                         }
